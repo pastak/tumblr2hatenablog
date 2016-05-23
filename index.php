@@ -5,6 +5,7 @@ define('T2W_VERSION', '0.4');
 # Some pieces of content will have to be parsed into HTML where we have to add
 # HTML strucutre (e.g. around conversations)
 require_once("markdown.php");
+date_default_timezone_set('Asia/Tokyo');
 
 # Check for valid input
 $username = isset($_REQUEST['username']) && !empty($_REQUEST['username']) ? $_REQUEST['username'] : '';
@@ -506,6 +507,8 @@ function formatEntryTitle(&$text, $strip=true) {
 # Use this to find whether media is hosted on the Tumblr server or at a
 # public location.
 function resolveRedirects($url) {
+    $tmp = explode("/", $url);
+    $uid = array_pop($tmp);
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_USERAGENT, TL_USERAGENT);
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -608,18 +611,19 @@ header("content-disposition: attachment; filename=tumblr_$username.xml");
     ob_start();
   foreach($posts as $post)
   {
+    $post_url_redirected = resolveRedirects($post->attributes()->url);
 ?>
   <item>
 <?php
         // Shared Output:
 ?>
-    <link><?php echo $post->attributes()->url ?></link>
+    <link><?php echo $post_url_redirected ?></link>
     <pubDate><?php echo $post->attributes()->date ?> +0000</pubDate>
     <dc:creator><![CDATA[post_author]]></dc:creator>
     <?php getTags($post) ?>
-    <guid isPermaLink="false"><?php echo $post->attributes()->url ?></guid>
+    <guid isPermaLink="false"><?php echo $post_url_redirected ?></guid>
     <!--<wp:post_id><?php echo $post->attributes()->id ?></wp:post_id>-->
-    <wp:post_date><?php echo date('Y-m-d G:i:s', (double)$post->attributes()->{'unix-timestamp'}) ?></wp:post_date>
+    <wp:post_date><?php echo date('Y-m-d H:i:s', (double)$post->attributes()->{'unix-timestamp'}) ?></wp:post_date>
     <wp:post_date_gmt><?php echo str_replace(" GMT", "", $post->attributes()->{'date-gmt'}) ?></wp:post_date_gmt>
     <wp:comment_status><?php echo $comments ?></wp:comment_status>
     <wp:ping_status><?php echo $pings ?></wp:ping_status>
@@ -664,7 +668,7 @@ header("content-disposition: attachment; filename=tumblr_$username.xml");
 FIGURE;
             }
       ?>
-    <title><?php echo htmlspecialchars(formatEntryTitle(&$post_content)) ?></title>
+    <title><?php echo htmlspecialchars(formatEntryTitle($post_content)) ?></title>
     <description></description>
     <content:encoded><![CDATA[<?php echo $image; ?>
     <?php echo formatForWP($post_content) ?>]]></content:encoded>
@@ -684,7 +688,7 @@ FIGURE;
                 $quote_text = "<blockquote>" . $post->{'quote-text'} . "</blockquote>";
             }
     ?>
-    <title><?php echo htmlspecialchars(formatEntryTitle(&$post_content)) ?></title>
+    <title><?php echo htmlspecialchars(formatEntryTitle($post_content)) ?></title>
     <description></description>
     <content:encoded><![CDATA[<?php echo $quote_text ?>
 
@@ -721,7 +725,7 @@ FIGURE;
       case "video":
       $post_content = $post->{'video-caption'};
     ?>
-    <title><?php echo htmlspecialchars(formatEntryTitle(&$post_content)) ?></title>
+    <title><?php echo htmlspecialchars(formatEntryTitle($post_content)) ?></title>
     <description></description>
     <content:encoded><![CDATA[
         <?php if($type == 'wordpress.com' && strpos($post->{'video-source'}, 'youtube.com') !== false) { ?>
@@ -740,9 +744,9 @@ FIGURE;
       case "audio":
       $post_content = $post->{'audio-caption'};
       $audio_file = preg_match('/audio_file=([\S\s]*?)(&|")/', $post->{'audio-player'}, $matches);
-            checkMediaForWarnings($matches[1], $post->attributes()->url, "audio");
+            checkMediaForWarnings($matches[1], $post_url_redirected, "audio");
     ?>
-    <title><?php echo htmlspecialchars(formatEntryTitle(&$post_content)) ?></title>
+    <title><?php echo htmlspecialchars(formatEntryTitle($post_content)) ?></title>
     <description></description>
     <content:encoded><![CDATA[<audio controls src="<?php echo $matches[1] ?>"><a href="<?php echo $matches[1]; ?>">Audio</a></audio>
 
