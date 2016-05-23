@@ -8,14 +8,38 @@ require_once("markdown.php");
 date_default_timezone_set('Asia/Tokyo');
 
 # Check for valid input
-$username = isset($_REQUEST['username']) && !empty($_REQUEST['username']) ? $_REQUEST['username'] : '';
+$cli_mode = 0;
 
-if(empty($username)): ?>
+function validate_format($format) {
+  $valid_values = ['html', 'text', 'none'];
+  return in_array($format, $valid_values) ? $format : 'none';
+}
+
+function validate_permalink($format) {
+  $valid_values = ['id', 'combo', 'original'];
+  return in_array($format, $valid_values) ? $format : 'none';
+}
+
+if ($argv) {
+  $options = getopt('',['username::','format:','permalink:']);
+  $username = $options['username'];
+  $_REQUEST['filter'] = validate_format($options['format']);
+  $_REQUEST["permaform"] = validate_permalink($options['permalink']);
+  $_REQUEST["type"] = 'wordpress';
+  $_REQUEST["publish-state"] = 'publish';
+  $_REQUEST["comment-state"] = 'off';
+  $_REQUEST["ping-state"] = 'off';
+  $cli_mode = 1;
+} else {
+  $username = isset($_REQUEST['username']) && !empty($_REQUEST['username']) ? $_REQUEST['username'] : '';
+}
+
+if(empty($username) && $cli_mode === 0): ?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Tumblr2WordPress: Export Your Tumblr Blog To WordPress RSS</title>
+    <title>Tumblr2Hatenablog</title>
     <link rel="profile" href="http://microformats.org/profile/hcard">
     <link rel="stylesheet" href="t2w.css" type="text/css">
   </head>
@@ -33,65 +57,14 @@ if(empty($username)): ?>
           <a class="h-card" href="http://haochen.me/">Hao Chen</a>
       </dd>
       <dd>This version by
-          <a class="h-card" href="http://benward.me">Ben Ward</a>
+          <a class="h-card" href="http://pastak-diary.hatenadiary.com">pastak</a>
       </dd>
       <dt>License</dt>
       <dd><a rel="license" href="http://www.gnu.org/licenses/gpl.html">GPL v3</a></dd>
       <dt>Source Code</dt>
-      <dd><a href="http://github.com/benward/tumblr2wordpress">
-          github.com/benward/tumblr2wordpress</a></dd>
+      <dd><a href="https://github.com/pastak/tumblr2hatenablog">
+          https://github.com/pastak/tumblr2hatenablog</a></dd>
     </dl>
-
-    <div class="yahoo">
-      <h2>Welcome, fear-stricken Tumblr friend!</h2>
-      <p>Good morning! By now you'll have
-        <a href="http://www.guardian.co.uk/technology/2013/may/19/yahoo-poised-buy-tumblr">heard the news</a>—or be frantically responding
-        to the rumour thereof—that Tumblr is selling to Yahoo for a gigantic pot
-        of money. Congratulations to them, you may think, followed by a spinal chill
-        of panic as your mind harks back to the bloodied fates of previous Yahoo acquisitions:
-        Geocities, Upcoming, Delicious…</p>
-      <p>Firstly, don't panic. No matter what anyone is saying on the internet,
-        it's very unlikely that anything will change suddenly; that's not how
-        these things work. Plus, Yahoo's intentions will be for Tumblr to be a
-        success, and it's under new management, so you never know, it might work
-        out. Still, regardless of what happens to the services we love in the future,
-        it is <em>always</em> smart to have back-ups, so hopefully this tool
-        can help you, whether you want to jump ship for WordPress, or just have
-        some piece of mind.</p>
-      <p>There are a few things that you should note:</p>
-      <ul>
-        <li>This tool is <em>old</em>. It was written a few years ago when I intended
-          to merge my Tumblr into a WordPress install. I never did it, and the tool
-          is a little incomplete as a result. It's still here, though.</li>
-        <li>The tool was written before Tumblr had support for multiple image
-          uploads, so if you do a lot of that you might not get the full export
-          you're hoping for.</li>
-        <li>The tool was also written before WordPress introduced their own concept
-          of top-level post types: Photos, Quotes, Video posts, etc. All posts from
-          this tool will be appropriately categorised, but maybe not quite as
-          cleverly as newer WordPress tools. You might want to consider the
-          <a href="http://wordpress.org/plugins/tumblr-importer/">Tumblr Importer</a>
-          plugin for WordPress instead.</li>
-        <li>The tool will give you some highly pedantic and slightly opinionated
-          HTML5 output. Which is all good. And it will attempt to coerce Audio
-          into an HTML5 audio player too. The actual file may or may not work in
-          this form, depending on the original source.</li>
-        <li>Posts with images will still reference the images on Tumblr's servers.
-          If you want to copy the images to your server as well you'll either need
-          to run another script, or install a WordPress plugin such as
-          Milan Dinicć's <a href="http://blog.milandinic.com/wordpress/plugins/cache-images/">Cache
-          Images</a> plugin.</li>
-      </ul>
-      <p>All that being said, you might still find the tool useful, and I hope you do.
-        The code was originally written by <a class="h-card" href="http://haochen.me/">Hao Chen</a>,
-        and was substantially updated by me, <a class="h-card" href="http://benward.me">Ben Ward</a>.
-      </p>
-
-      <p>The source code (which, I cannot stress enough, is very old now) is
-        <a href="http://github.com/benward/tumblr2wordpress">on Github</a>,
-        if you'd like to run your own copy or make changes.</p>
-    </div>
-
 
     <form method="POST" action="">
 
@@ -134,7 +107,7 @@ if(empty($username)): ?>
                     e.g. <kbd>http://blog.example.com/posts/<strong>12345678-my-blog-post-title</strong></kbd>
                 </label>
             </li>
-            <li><input type="radio" name="permaform" id="link-orig" value="text">
+            <li><input type="radio" name="permaform" id="link-orig" value="original">
                 <label for="link-orig">Use original Tumblr text slug only.
                     e.g. <kbd>http://blog.example.com/posts/<strong>my-blog-post-title-about-stuff</strong></kbd>
                 </label>
@@ -191,29 +164,6 @@ if(empty($username)): ?>
             your posts.</p>
     </fieldset>
     </form>
-    <h2>Notes and Help</h2>
-    <div id="help-permalinks">
-        <p>So, you're migrating your blog. Good for you!
-            If you're running your tumblr blog on your own domain
-            (<samp>yourdomain.com</samp> rather than <samp>me.tumblr.com</samp>,
-            for example), then you can set up redirects from the old URLs that
-            people are still linking to, to the imported post on your new
-            WordPress blog.</p>
-        <p>Basically, where you have a Tumblr post URL that looks like this:
-          <samp>http://example.com/post/12345678/this-is-a-post</samp>,
-          the only part that matters is
-          <samp>http://example.com/post/12345678/</samp>. That number is
-          the ID. Everything after that gets ignored when Tumblr loads
-          the post.</p>
-          <p>When you export your post, you're encouraged to include that
-          post ID in the new permalink slugs, since that way you can redirect
-          from one to the other.</p>
-          <p>If you take your current Tumblr custom domain, and host it
-          yourself, you can set up a simple <samp>.htaccess</samp> redirect
-          for people linking to your old posts:</p>
-          <pre><code>RewriteEngine On
-RewriteRule ^/?posts/([0-9]+).*$ http://wordpress.example.com/blog/$1</code></pre>
-        </div>
     </p>
   </body>
 </html>
@@ -257,9 +207,9 @@ switch($_REQUEST["permaform"]) {
         # ID and Hyphenated Title
         $permalink_format = "combined";
         break;
-    case "text":
+    case "original":
         # Title
-        $permalink_format = "text";
+        $permalink_format = "original";
         break;
     case "id":
     default:
@@ -443,7 +393,7 @@ function formatPermalinkSlug($id, $text) {
     switch($permalink_format) {
         case 'combo':
             return $id . '-' . removeWeirdChars($text);
-        case 'text':
+        case 'original':
             return removeWeirdChars($text);
         case 'id':
         default:
@@ -507,8 +457,6 @@ function formatEntryTitle(&$text, $strip=true) {
 # Use this to find whether media is hosted on the Tumblr server or at a
 # public location.
 function resolveRedirects($url) {
-    $tmp = explode("/", $url);
-    $uid = array_pop($tmp);
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_USERAGENT, TL_USERAGENT);
     curl_setopt($ch, CURLOPT_URL, $url);
@@ -564,8 +512,11 @@ WARNING;
     endif;
 }
 
-header('content-type: text/xml');
-header("content-disposition: attachment; filename=tumblr_$username.xml");
+if ($cli_mode === 0) {
+  header('content-type: text/xml');
+  header("content-disposition: attachment; filename=tumblr_$username.xml");
+}
+
 ?>
 <?php echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"; ?>
 <!-- This is a WordPress eXtended RSS file generated from your Tumblr posts. -->
@@ -611,17 +562,16 @@ header("content-disposition: attachment; filename=tumblr_$username.xml");
     ob_start();
   foreach($posts as $post)
   {
-    $post_url_redirected = resolveRedirects($post->attributes()->url);
 ?>
   <item>
 <?php
         // Shared Output:
 ?>
-    <link><?php echo $post_url_redirected ?></link>
+    <link><?php echo $post->attributes()->url ?></link>
     <pubDate><?php echo $post->attributes()->date ?> +0000</pubDate>
     <dc:creator><![CDATA[post_author]]></dc:creator>
     <?php getTags($post) ?>
-    <guid isPermaLink="false"><?php echo $post_url_redirected ?></guid>
+    <guid isPermaLink="false"><?php echo $post->attributes()->url ?></guid>
     <!--<wp:post_id><?php echo $post->attributes()->id ?></wp:post_id>-->
     <wp:post_date><?php echo date('Y-m-d H:i:s', (double)$post->attributes()->{'unix-timestamp'}) ?></wp:post_date>
     <wp:post_date_gmt><?php echo str_replace(" GMT", "", $post->attributes()->{'date-gmt'}) ?></wp:post_date_gmt>
@@ -744,7 +694,7 @@ FIGURE;
       case "audio":
       $post_content = $post->{'audio-caption'};
       $audio_file = preg_match('/audio_file=([\S\s]*?)(&|")/', $post->{'audio-player'}, $matches);
-            checkMediaForWarnings($matches[1], $post_url_redirected, "audio");
+            checkMediaForWarnings($matches[1], $post->attributes()->url, "audio");
     ?>
     <title><?php echo htmlspecialchars(formatEntryTitle($post_content)) ?></title>
     <description></description>
