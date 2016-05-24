@@ -44,10 +44,10 @@ if(empty($username) && $cli_mode === 0): ?>
     <link rel="stylesheet" href="t2w.css" type="text/css">
   </head>
   <body>
-    <h1>Tumblr2WordPress: Export Your Tumblr to WordPress</h1>
+    <h1>Tumblr2HatenaBlog: Export Your Tumblr to HatenaBlog</h1>
 
-    <p>This tool will create a WordPress compatible XML file from your
-        Tumblr blog, which you can then save and import into WordPress.</p>
+    <p>This tool will create a HatenaBlog Importable WordPress style XML file from your
+        Tumblr blog, which you can then save and import into HatenaBlog.</p>
 
     <dl class="about">
       <dt>Version</dt>
