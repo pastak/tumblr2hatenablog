@@ -12,6 +12,8 @@ This work is licensed under the GPL v3 <http://www.gnu.org/licenses/gpl.html>
 
 ## Usage
 
+You can use on http://tumblr2hatenablog.herokuapp.com/
+
 ### as a command line tool
 
 - `% php index.php --username <your-tumblr-id> > export.xml`
